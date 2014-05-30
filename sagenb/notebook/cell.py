@@ -2369,7 +2369,11 @@ class Cell(Cell_generic):
                     jmol_script = jmol_file.read()
                     jmol_file.close()
 
-                    jmol_script = jmol_script.replace('defaultdirectory "', 'defaultdirectory "' + self.url_to_self() + '/')
+                    # Found no Worsheet.url_to_self(), so calculate it
+                    # similar to Cell.url_to_self()
+                    url_to_ws = '/home/%s/' % self.worksheet_filename()
+                    jmol_script = jmol_script.replace('defaultdirectory "',
+                                                      'defaultdirectory "' + url_to_ws)
 
                     jmol_file = open(jmol_name, 'w')
                     jmol_file.write(jmol_script)
