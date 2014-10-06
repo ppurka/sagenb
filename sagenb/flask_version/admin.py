@@ -16,8 +16,22 @@ def random_password(length=8):
 @admin.route('/manage_users')
 @admin_required
 @with_lock
-def manage_users():
+def users(reset=None):
+    from sagenb.misc.misc import SAGE_VERSION
     template_dict = {}
+    template_dict['sage_version'] = SAGE_VERSION
+    if reset:
+        from random import choice
+        import string
+        chara = string.letters + string.digits
+        password = ''.join([choice(chara) for i in range(8)])
+        try:
+            U = g.notebook.user_manager().user(reset)
+            g.notebook.user_manager().set_password(reset, password)
+        except KeyError:
+            pass
+        template_dict['reset'] = [reset, password]
+
     template_dict['number_of_users'] = len(g.notebook.user_manager().valid_login_names()) if len(g.notebook.user_manager().valid_login_names()) > 1 else None
     users = sorted(g.notebook.user_manager().valid_login_names())
     del users[users.index('admin')]
@@ -61,30 +75,37 @@ def suspend_user():
 @with_lock
 def add_user():
     from sagenb.notebook.misc import is_valid_username
+    from sagenb.misc.misc import SAGE_VERSION
+    template_dict = {'admin': g.notebook.user_manager().user(g.username).is_admin(),
+            'username': g.username, 'sage_version': SAGE_VERSION}
+    if 'username' in request.values:
+        if request.values['cancel']:
+            return redirect(url_for('users'))
+        username = request.values['username']
+        if not is_valid_username(username):
+            return encode_response({
+                'error': _('<strong>Invalid username!</strong>')
+            })
 
-    username = request.values['username']
-    password = random_password()
-
-    if not is_valid_username(username):
+        password = random_password()
+        if username in g.notebook.user_manager().usernames():
+            return encode_response({
+                'error': _('The username <strong>%(username)s</strong> is already taken!', username=username)
+            })
+        g.notebook.user_manager().add_user(username, password, '', force=True)
         return encode_response({
-            'error': _('<strong>Invalid username!</strong>')
+            'message': _('The temporary password for the new user <strong>%(username)s</strong> is <strong>%(password)s</strong>',
+                          username=username, password=password)
         })
+    else:
+        return render_template(os.path.join('html', 'settings', 'admin_add_user.html'),
+                               **template_dict)
 
-    if username in g.notebook.user_manager().usernames():
-        return encode_response({
-            'error': _('The username <strong>%(username)s</strong> is already taken!', username=username)
-        })
-
-    g.notebook.user_manager().add_user(username, password, '', force=True)
-    return encode_response({
-        'message': _('The temporary password for the new user <strong>%(username)s</strong> is <strong>%(password)s</strong>',
-                      username=username, password=password)
-    })
-
-@admin.route('/notebook_settings', methods=['GET', 'POST'])
+@admin.route('/notebooksettings', methods=['GET', 'POST'])
 @admin_required
 @with_lock
 def notebook_settings():
+    from sagenb.misc.misc import SAGE_VERSION
     updated = {}
     if 'form' in request.values:
         updated = g.notebook.conf().update_from_form(request.values)
@@ -96,6 +117,7 @@ def notebook_settings():
         current_app.config['BABEL_DEFAULT_LOCALE'] = request.values['default_language']
 
     template_dict = {}
+    template_dict['sage_version'] = SAGE_VERSION
     template_dict['auto_table'] = g.notebook.conf().html_table(updated)
     template_dict['admin'] = g.notebook.user_manager().user(g.username).is_admin()
     template_dict['username'] = g.username

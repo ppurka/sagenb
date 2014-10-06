@@ -54,7 +54,7 @@
 			</div>
 
 			<div id="sign-in-box" class="span4">
-				<h2 style="margin-bottom: 10px;">Sign into the Sage Notebook v{{ sage_version }}</h2>
+				<h2 style="margin-bottom: 10px;">{{ gettext('Sign into the Sage Notebook v%(v)s', v=sage_version) }}</h2>
 				<form method="post" action="/login" id="sign-in-form" class="well">
 					<div>
 						<label for="email">{{ gettext('Username') }}</label>
@@ -84,6 +84,13 @@
 
 				{% if openid %}
 					<form method="post" action="/loginoid" id="openid" class="well"></form>
+                    <div style="display: block; text-align: justify; color: #333;
+                               border: 1px solid #333; border-radius: 3px;">
+                        <strong>Note: </strong>
+                        If you are a returning user, please use the exact same URL for
+                        this notebook server as you used to log in previously. For example,
+                        do not use www.sagenb.org if you used sagenb.org earlier.
+                    </div>
 				{% endif %}
 
 				<div>
@@ -91,13 +98,6 @@
 				</div>
 			</div>
 		</div>
-    <div style="display: block; text-align: justify; color: #333;
-               border: 1px solid #333; border-radius: 3px;">
-        <strong>Note: </strong>
-        If you are a returning user, please use the exact same URL for
-        this notebook server as you used to log in previously. For example,
-        do not use www.sagenb.org if you used sagenb.org earlier.
-    </div>
 	</div>
 {% endblock %}
 
